@@ -28,7 +28,8 @@ public class ConsumerTest {
         provider.init();
         provider.online();
 
-        final ListenerHolder listener = provider.addListener("new.qmq.test", "group1", new MessageListener() {
+        // 第二个参数类似消费组的概念，consumerGroup不同，就是一个topic不同的消费方
+        final ListenerHolder listener = provider.addListener("new.qmq.test", "group2", new MessageListener() {
             @Override
             public void onMessage(Message msg) {
                 LOG.info("msgId:{}", msg.getMessageId());
