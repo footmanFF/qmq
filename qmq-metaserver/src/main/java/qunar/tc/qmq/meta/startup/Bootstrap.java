@@ -46,6 +46,12 @@ public class Bootstrap {
         final Server server = new Server(port);
         server.setHandler(context);
         server.start();
+
+        System.out.println("=============== metaServer 启动成功 ===============");
+        System.out.println("=============== metaServer 启动成功 ===============");
+        System.out.println("=============== metaServer 启动成功 ===============");
+        System.out.println("=============== metaServer 启动成功 ===============");
+        
         server.join();
     }
 }
