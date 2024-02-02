@@ -47,5 +47,10 @@ public class Bootstrap {
             server.start();
             server.join();
         }
+
+        System.out.println("=============== msgServer 启动成功 ===============");
+        System.out.println("=============== msgServer 启动成功 ===============");
+        System.out.println("=============== msgServer 启动成功 ===============");
+        System.out.println("=============== msgServer 启动成功 ===============");
     }
 }
