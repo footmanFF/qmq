@@ -221,7 +221,7 @@ public class HashedWheelTimer {
                     // 根据指针取出时间轮的槽
                     HashedWheelBucket bucket = wheel[idx];
                     
-                    // 
+                    // 从队列中拿出超时任务放入时间轮
                     transferTimeoutsToBuckets();
                     
                     bucket.expireTimeouts(deadline);
