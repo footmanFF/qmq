@@ -78,6 +78,8 @@ public class HashedWheelTimer {
 
         // Normalize ticksPerWheel to power of two and initialize the wheel.
         wheel = createWheel(ticksPerWheel);
+        
+        // 掩码，wheel.length是2的n次幂，wheel.length - 1的二进制全是1
         mask = wheel.length - 1;
 
         // Convert tickDuration to nanos.
@@ -92,6 +94,9 @@ public class HashedWheelTimer {
         workerThread = threadFactory.newThread(worker);
     }
 
+    /**
+     * 建立时间轮，是一个数组，数组长度为大于ticksPerWheel的最小的2的n次幂
+     */
     private static HashedWheelBucket[] createWheel(int ticksPerWheel) {
         if (ticksPerWheel <= 0) {
             throw new IllegalArgumentException(
@@ -110,6 +115,9 @@ public class HashedWheelTimer {
         return wheel;
     }
 
+    /**
+     * 取大于ticksPerWheel的最小的2的n次幂
+     */
     private static int normalizeTicksPerWheel(int ticksPerWheel) {
         int normalizedTicksPerWheel = 1;
         while (normalizedTicksPerWheel < ticksPerWheel) {
@@ -207,10 +215,18 @@ public class HashedWheelTimer {
             do {
                 final long deadline = waitForNextTick();
                 if (deadline > 0) {
+                    // 相当于tick对时间轮的槽数取模
                     int idx = (int) (tick & mask);
+                    
+                    // 根据指针取出时间轮的槽
                     HashedWheelBucket bucket = wheel[idx];
+                    
+                    // 
                     transferTimeoutsToBuckets();
+                    
                     bucket.expireTimeouts(deadline);
+                    
+                    // 对时间轮指针加1
                     tick++;
                 }
             } while (WORKER_STATE_UPDATER.get(HashedWheelTimer.this) == WORKER_STATE_STARTED);
@@ -229,6 +245,9 @@ public class HashedWheelTimer {
             }
         }
 
+        /**
+         * 从队列中拿出超时任务放入时间轮
+         */
         private void transferTimeoutsToBuckets() {
             // transfer only max. 100000 timeouts per tick to prevent a thread to stale the workerThread when it just
             // adds new timeouts in a loop.
@@ -238,14 +257,25 @@ public class HashedWheelTimer {
                     // all processed
                     break;
                 }
-
+                
+                // deadline是离到期剩余的时间
+                // calculated是离到期指针还需要跳动的次数
                 long calculated = timeout.deadline / tickDuration;
+                
+                // 计算相当于当前的指针位置，还有多少转轮才能到达超时时间
                 timeout.remainingRounds = (calculated - tick) / wheel.length;
 
+                // 离到期指针需要跳动的次数，最小取当前的指针位置，避免算一个过去的时间
+                // 如果给到的超时时间是过去的时间，那么会被加入到当前指针的槽位，立刻到期
                 final long ticks = Math.max(calculated, tick); // Ensure we don't schedule for past.
+                
+                // 计算在时间轮的槽位
                 int stopIndex = (int) (ticks & mask);
 
+                // 获得时间轮的槽
                 HashedWheelBucket bucket = wheel[stopIndex];
+                
+                // 将超时任务加入到时间轮槽位
                 bucket.addTimeout(timeout);
             }
         }

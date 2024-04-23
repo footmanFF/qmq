@@ -167,6 +167,9 @@ public class ActorSystem {
             }
         }
 
+        /**
+         * 从队列拿出消息处理，并且控制仅一个限定的时间窗口执行，超出时间则中断
+         */
         void processMessages() {
             long deadline = System.currentTimeMillis() + QUOTA;
             while (true) {
@@ -176,10 +179,15 @@ public class ActorSystem {
                 if (!process) return;
 
                 queue.pollNode();
+                
+                // 超时时间，中断
                 if (System.currentTimeMillis() >= deadline) return;
             }
         }
 
+        /**
+         * status是否等于2，也就是Scheduled
+         */
         final boolean shouldProcessMessage() {
             return (currentStatus() & shouldNotProcessMask) == 0;
         }
@@ -213,9 +221,14 @@ public class ActorSystem {
             }
         }
 
+        /**
+         * 将status从Scheduled翻转为Open，也就是空闲
+         */
         final void setAsIdle() {
             while (true) {
                 int s = currentStatus();
+                // 如果s当前值是Scheduled，也就是2，那么s与 (~Scheduled) 求与，相当于把s复位为0
+                // 0是Open，也就是初始值
                 if (updateStatus(s, s & ~Scheduled)) return;
             }
         }
