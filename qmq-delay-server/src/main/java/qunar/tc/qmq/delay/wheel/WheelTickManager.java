@@ -66,6 +66,8 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
     public WheelTickManager(DefaultStoreConfiguration config, BrokerService brokerService, DelayLogFacade facade, Sender sender) {
         this.config = config;
         this.segmentScale = config.getSegmentScale();
+        
+        // 1小时时间轮
         this.timer = new HashedWheelTimer(new ThreadFactoryBuilder().setNameFormat("delay-send-%d").build(), 500, TimeUnit.MILLISECONDS, TICKS_PER_WHEEL, this);
         this.facade = facade;
         this.sender = new SenderProcessor(facade, brokerService, sender, config.getConfig());
