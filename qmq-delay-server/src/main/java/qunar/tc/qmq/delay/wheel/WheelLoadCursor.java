@@ -23,7 +23,14 @@ import java.util.Objects;
  * @since 2018-09-28 11:21
  */
 public class WheelLoadCursor {
+
+    /**
+     * 记录已经读取到的scheduler_log文件名，比如：202404241500
+     */
     private volatile long baseOffset;
+    /**
+     * 记录从scheduler_log中已经读取到的字节位置
+     */
     private volatile long offset;
 
     private final Object cursorLock = new Object();

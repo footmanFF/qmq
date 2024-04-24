@@ -123,8 +123,6 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
 
     /**
      * 看看哪些已经dispatch过了，recover的时候就忽略
-     * @param currentDispatchLog
-     * @return
      */
     private LongHashSet loadDispatchLog(final DispatchLogSegment currentDispatchLog) {
         LogVisitor<Long> visitor = currentDispatchLog.newVisitor(0);
@@ -149,7 +147,11 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
      * 周期性的兜底---每隔30分钟执行一次，
      */
     private void load() {
-        long next = System.currentTimeMillis() + config.getLoadInAdvanceTimesInMillis();
+        long add = config.getLoadInAdvanceTimesInMillis();
+        long next = System.currentTimeMillis() + add;
+        
+        // {year} - {month} - {day} - {hour} - {minute}
+        // 比如：2024_04_24_15_00
         long prepareLoadBaseOffset = resolveSegment(next, segmentScale);
         try {
             loadUntil(prepareLoadBaseOffset);
@@ -184,6 +186,13 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
         LOGGER.info("wheel load until {} <= {}", loadedCursor.baseOffset(), until);
     }
 
+    /**
+     * 从schedule_log加载数据，要求文件名不超过until
+     * 
+     * @param until  {year} - {month} - {day} - {hour} - {minute}
+     *               比如：2024_04_24_15_00
+     * @return true: 处理成功  false：处理异常
+     */
     private boolean loadUntilInternal(long until) {
         long index = resolveStartIndex();
         if (index < 0) return true;
@@ -192,13 +201,17 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
             while (index <= until) {
                 ScheduleSetSegment segment = facade.loadScheduleLogSegment(index);
                 if (segment == null) {
+                    // 加载下一个schedule_log文件
                     long nextIndex = facade.higherScheduleBaseOffset(index);
                     if (nextIndex < 0) return true;
                     index = nextIndex;
                     continue;
                 }
 
+                // 加载schedule_log文件
                 loadSegment(segment);
+                
+                // 一个文件加载完了，找到下一个最近的文件加载
                 long nextIndex = facade.higherScheduleBaseOffset(index);
                 if (nextIndex < 0) return true;
 
@@ -231,24 +244,34 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
     private void loadSegment(ScheduleSetSegment segment) {
         final long start = System.currentTimeMillis();
         try {
+            // schedule_log文件的文件偏移量
             long baseOffset = segment.getSegmentBaseOffset();
+            
+            // schedule_log文件写入的字节偏移量
             long offset = segment.getWrotePosition();
             if (!loadingCursor.shiftCursor(baseOffset, offset)) {
                 LOGGER.error("doLoadSegment error,shift loadingCursor failed,from {}-{} to {}-{}", loadingCursor.baseOffset(), loadingCursor.offset(), baseOffset, offset);
                 return;
             }
 
+            // 内存记录的已经加载schedule_log位移
             WheelLoadCursor.Cursor loadedCursorEntry = loadedCursor.cursor();
+            
             // have loaded
+            // 文件已经加载过
             if (baseOffset < loadedCursorEntry.getBaseOffset()) return;
 
             long startOffset = 0;
+
             // last load action happened error
+            // 取上一次加载到的字节偏移量
             if (baseOffset == loadedCursorEntry.getBaseOffset() && loadedCursorEntry.getOffset() > -1)
                 startOffset = loadedCursorEntry.getOffset();
 
+            // 创建visitor，从startOffset开始读取，并且指定文件中一条数据的长度
             LogVisitor<ScheduleIndex> visitor = segment.newVisitor(startOffset, config.getSingleMessageLimitSize());
             try {
+                // 重设「文件偏移量」和「字节偏移量」
                 loadedCursor.shiftCursor(baseOffset, startOffset);
 
                 long currentOffset = startOffset;
@@ -257,9 +280,13 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
                     if (!recordOptional.isPresent()) break;
                     ScheduleIndex index = recordOptional.get();
                     currentOffset = index.getOffset() + index.getSize();
+                    
+                    // 加入到时间轮的队列中
                     refresh(index);
+                    // 重设已经读取到的字节位置
                     loadedCursor.shiftOffset(currentOffset);
                 }
+                // 重设已经读取到的schedule_log的文件偏移量，比如：202404241500
                 loadedCursor.shiftCursor(baseOffset);
                 LOGGER.info("loaded segment:{} {}", loadedCursor.baseOffset(), currentOffset);
             } finally {

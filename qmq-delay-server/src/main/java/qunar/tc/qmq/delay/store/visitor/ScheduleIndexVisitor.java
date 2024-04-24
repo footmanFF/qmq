@@ -80,6 +80,8 @@ public class ScheduleIndexVisitor extends AbstractLogVisitor<ScheduleIndex> {
 
         int metaSize = getMetaSize(messageId, subjectLen);
         int recordSize = metaSize + payloadSize;
+        
+        // 在scheduler_log文件中中的字节偏移量
         long startOffset = visitedBufferSize();
         buffer.position(Math.toIntExact(curPos + recordSize));
 

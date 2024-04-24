@@ -23,9 +23,21 @@ public class ScheduleIndex {
 
     private static final Interner<String> INTERNER = Interners.newStrongInterner();
 
+    /**
+     * 消息主题
+     */
     private final String subject;
+    /**
+     * 延时时间戳
+     */
     private final long scheduleTime;
+    /**
+     * 在scheduler_log文件中的字节偏移量
+     */
     private final long offset;
+    /**
+     * 在scheduler_log文件中消息字节长度
+     */
     private final int size;
     private final long sequence;
 

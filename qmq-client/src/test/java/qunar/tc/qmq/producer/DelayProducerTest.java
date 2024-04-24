@@ -27,7 +27,7 @@ public class DelayProducerTest {
         final CountDownLatch countDownLatch = new CountDownLatch(msgNum);
         for (int i = 0; i < msgNum; i++) {
             final Message message = provider.generateMessage("new.qmq.test.delay");
-            message.setDelayTime(10L, TimeUnit.SECONDS);
+            message.setDelayTime(3600L + 60L, TimeUnit.SECONDS);
 
             provider.sendMessage(message, new MessageSendStateListener() {
                 @Override
