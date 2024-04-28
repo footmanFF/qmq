@@ -80,6 +80,8 @@ class SenderExecutor implements Disposable {
 
     private Map<SenderGroup, List<ScheduleIndex>> groupByBroker(final List<ScheduleIndex> indexList, final BrokerService brokerService) {
         Map<SenderGroup, List<ScheduleIndex>> groups = Maps.newHashMap();
+        
+        // key: subject
         Map<String, List<ScheduleIndex>> recordsGroupBySubject = groupBySubject(indexList);
         for (Map.Entry<String, List<ScheduleIndex>> entry : recordsGroupBySubject.entrySet()) {
             List<ScheduleIndex> setRecordsGroupBySubject = entry.getValue();
