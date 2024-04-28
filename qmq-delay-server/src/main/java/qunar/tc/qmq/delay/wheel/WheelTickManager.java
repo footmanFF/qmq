@@ -178,9 +178,10 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
             // until时间之前，loadingCursor.baseOffset之后，有完全没有数据的时间段
             // 也就是存在某一个小时，完全没有数据
             if (loadingCursor.baseOffset() < until) {
-                long thresholdTime = System.currentTimeMillis() + config.getLoadBlockingExitTimesInMillis();
+                long thresholdTime = System.currentTimeMillis() + config.getLoadBlockingExitTimesInMillis(); // result = 640000
                 // exit in a few minutes in advance
                 if (resolveSegment(thresholdTime, segmentScale) >= until) {
+                    // 
                     loadingCursor.shiftCursor(until);
                     loadedCursor.shiftCursor(until);
                     break;
@@ -243,6 +244,8 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
         long startIndex = loadedEntry.getBaseOffset();
         long offset = loadedEntry.getOffset();
 
+        // loadedEntry.Offset为-1，代表了文件已经加载完了
+        // 然后取时候更靠后的文件名
         if (offset < 0) return facade.higherScheduleBaseOffset(startIndex);
 
         return startIndex;
