@@ -160,6 +160,9 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
         }
     }
 
+    /**
+     * 加载一个时间戳以前的数据
+     */
     private void loadUntil(long until) throws InterruptedException {
         long loadedBaseOffset = loadedCursor.baseOffset();
         // have loaded
@@ -170,6 +173,10 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
             if (!loadUntilInternal(until)) break;
 
             // load successfully(no error happened) and current wheel loading cursor < until
+            
+            // loadUntilInternal没有异常的情况下，loadingCursor.baseOffset小于unit是因为
+            // until时间之前，loadingCursor.baseOffset之后，有完全没有数据的时间段
+            // 也就是存在某一个小时，完全没有数据
             if (loadingCursor.baseOffset() < until) {
                 long thresholdTime = System.currentTimeMillis() + config.getLoadBlockingExitTimesInMillis();
                 // exit in a few minutes in advance
@@ -249,6 +256,8 @@ public class WheelTickManager implements Switchable, HashedWheelTimer.Processor 
             
             // schedule_log文件写入的字节偏移量
             long offset = segment.getWrotePosition();
+            
+            // 记录最后执行加载的文件偏移
             if (!loadingCursor.shiftCursor(baseOffset, offset)) {
                 LOGGER.error("doLoadSegment error,shift loadingCursor failed,from {}-{} to {}-{}", loadingCursor.baseOffset(), loadingCursor.offset(), baseOffset, offset);
                 return;
