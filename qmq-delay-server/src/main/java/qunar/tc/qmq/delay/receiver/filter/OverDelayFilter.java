@@ -36,6 +36,7 @@ public class OverDelayFilter implements Filter {
 
     @Override
     public void invoke(Invoker invoker, ReceivedDelayMessage message) {
+        // 校验延时时间不得超过两年
         if (message.getScheduleTime() > (System.currentTimeMillis() + TWO_YEAR_MILLIS)) {
             LOGGER.warn("received delay message over delay,message:{}", message);
             QMon.overDelay(message.getSubject());
