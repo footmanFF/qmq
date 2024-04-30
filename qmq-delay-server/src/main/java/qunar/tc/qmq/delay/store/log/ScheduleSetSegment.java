@@ -50,6 +50,7 @@ public class ScheduleSetSegment extends AbstractDelaySegment<ScheduleSetSequence
         // 交给gc，不能给每个segment分配一个局部buffer
         ByteBuffer result = ByteBuffer.allocateDirect(size);
         try {
+            // 这应该是随机读
             int bytes = fileChannel.read(result, offset);
             if (bytes != size) {
                 DirectBufCloser.close(result);

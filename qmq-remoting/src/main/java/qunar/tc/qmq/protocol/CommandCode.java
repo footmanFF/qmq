@@ -37,6 +37,9 @@ public interface CommandCode {
     short PULL_MESSAGE = 11;
     short ACK_REQUEST = 12;
 
+    /**
+     * 这是什么请求？？ 同步日志？
+     */
     short SYNC_LOG_REQUEST = 20;
     short SYNC_CHECKPOINT_REQUEST = 21;
 
